@@ -21,4 +21,6 @@ const captainSchema = new mongoose.Schema({
   },
 });
 
-export default mongoose.model("Captain", captainSchema);
+captainSchema.index({ email: 1 });
+
+export default mongoose.model("Captain", captainSchema).syncIndexes();
