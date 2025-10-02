@@ -3,6 +3,7 @@
 import userModel from "../model/user.model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import blackListedToken from "../model/blackListedToken.js";
 export const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -49,11 +50,12 @@ export const signin = async (req, res) => {
 
 export const logout = async (req, res) => {
   try {
-    const token = req.cookies.token || req.headers.authorization.split(" ")[1];
+    const token =
+      req.cookies?.token || req.headers?.authorization.split(" ")[1];
     if (!token) {
       return res.status(401).json({ message: "Unauthorized" });
     }
-    await blacklistedTokenModel.create({ token });
+    await blackListedToken.create({ token });
     res.clearCookie("token");
     return res.json({ message: "Logged out successfully" });
   } catch (error) {
@@ -63,7 +65,8 @@ export const logout = async (req, res) => {
 
 export const getUser = async (req, res) => {
   try {
-    const user = await userModel.findById(req.user);
+    console.log(req.user);
+    const user = await userModel.findById(req.user._id);
     if (!user) return res.send("User does not exist");
     delete user._doc.password;
     return res.json({ user });

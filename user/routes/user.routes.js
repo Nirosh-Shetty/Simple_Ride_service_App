@@ -6,8 +6,9 @@ import {
   signin,
   signup,
 } from "../controller/user.controller.js";
+import { userAuth } from "../middleware/auth.middleware.js";
 router.post("/signup", signup);
 router.post("/signin", signin);
-router.post("/getuser", getUser);
+router.get("/getuser", userAuth, getUser);
 router.get("/logout", logout);
 export default router;

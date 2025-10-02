@@ -1,8 +1,6 @@
 import express from "express";
 const app = express();
-import dotenv from "dotenv";
 import proxy from "express-http-proxy";
-dotenv.config();
 
 app.use("/user", proxy("http://localhost:3001"));
 app.use("/captain", proxy("http://localhost:3002"));
