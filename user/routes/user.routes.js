@@ -9,6 +9,6 @@ import {
 import { userAuth } from "../middleware/auth.middleware.js";
 router.post("/signup", signup);
 router.post("/signin", signin);
-router.get("/getuser", userAuth, getUser);
+router.get("/get-user", userAuth, getUser);
 router.get("/logout", logout);
 export default router;
