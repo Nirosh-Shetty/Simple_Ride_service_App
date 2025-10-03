@@ -16,6 +16,5 @@ const userSchema = new mongoose.Schema({
     select: false,
   },
 });
-userSchema.index({ email: 1 });
 
-export default mongoose.model("User", userSchema).syncIndexes();
+export default mongoose.model("User", userSchema);

@@ -1,8 +1,9 @@
 import express from "express";
-import { createRide } from "../controller/ride.controller";
-import { userAuth } from "../middleware/auth.middleware";
+import { acceptRide, createRide } from "../controller/ride.controller.js";
+import { captainAuth, userAuth } from "../middleware/auth.middleware.js";
 const router = express.Router();
 
-router.post("create-ride", userAuth, createRide);
+router.post("/create-ride", userAuth, createRide);
+router.put("/accept-ride", captainAuth, acceptRide);
 
 export default router;

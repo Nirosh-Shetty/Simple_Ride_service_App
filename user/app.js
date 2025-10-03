@@ -3,6 +3,8 @@ import router from "./routes/user.routes.js";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 dotenv.config();
+import { connect as connectRabbitMq } from "./service/rabbit.js";
+connectRabbitMq();
 const app = express();
 
 app.use(express.json());

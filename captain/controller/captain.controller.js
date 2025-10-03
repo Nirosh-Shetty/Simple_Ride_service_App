@@ -4,6 +4,8 @@ import captainModel from "../model/captain.model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import blackListedToken from "../model/blackListedToken.js";
+import { subscribeToQueue } from "../service/rabbit.js";
+
 export const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -65,11 +67,8 @@ export const logout = async (req, res) => {
 
 export const getCaptain = async (req, res) => {
   try {
-    console.log(req.captain);
-    const captain = await captainModel.findById(req.captain._id);
-    if (!captain) return res.send("captain does not exist");
-    delete captain._doc.password;
-    return res.json({ captain });
+    // console.log("Captain data:", req.captain);
+    res.send(req.captain);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -89,3 +88,28 @@ export const toggleAvailability = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+const pendingRequests = [];
+
+//TODO: understand this part
+export const waitForNewRide = async (req, res) => {
+  // Set timeout for long polling (e.g., 30 seconds)
+  req.setTimeout(30000, () => {
+    res.status(204).end(); // No Content
+  });
+
+  // Add the response object to the pendingRequests array
+  pendingRequests.push(res);
+};
+
+subscribeToQueue("new-ride", (data) => {
+  const rideData = JSON.parse(data);
+  // console.log("ride data got iin captain service", rideData);
+  // Send the new ride data to all pending requests
+  pendingRequests.forEach((res) => {
+    res.json(rideData);
+  });
+
+  // Clear the pending requests
+  pendingRequests.length = 0;
+});

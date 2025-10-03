@@ -1,9 +1,16 @@
+import rideModel from "../../ride/model/ride.model.js";
+import redis from "../service/redis.js";
+// import { EventEmitter } from "events";
+import { subscribeToQueue } from "../service/rabbit.js";
+import EventEmitter from "events";
+const rideEventEmitter = new EventEmitter();
 // import express from "express";
 // import mongoose from "mongoose";
 import userModel from "../model/user.model.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import blackListedToken from "../model/blackListedToken.js";
+
 export const signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -65,12 +72,59 @@ export const logout = async (req, res) => {
 
 export const getUser = async (req, res) => {
   try {
-    console.log(req.user);
-    const user = await userModel.findById(req.user._id);
-    if (!user) return res.send("User does not exist");
-    delete user._doc.password;
-    return res.json({ user });
+    // console.log("User data:", req.user);
+    res.send(req.user);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
+
+export const getRideHistory = async (req, res) => {
+  try {
+    const userId = req.user._id.toString();
+    // const cacheKey = `ride-history:${userId}`;
+    // Try to get from Redis cache
+    const cached = await redis.get(`ride-history:${userId}`);
+    if (cached) {
+      return res.json({ rides: JSON.parse(cached), cached: true });
+    }
+
+    const rides = await rideModel.find({ user: userId }).lean();
+
+    await redis.set(`ride-history:${userId}`, JSON.stringify(rides), "EX", 300);
+    return res.json({ rides, cached: false });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// export const isRideAccepted = async (req, res) => {
+//   try {
+//     const userId = req.user._id;
+//     // Check if the user has an accepted ride
+//     const ride = await rideModel.findOne({ user: userId, status: "accepted" });
+//     if (ride) {
+//       return res.json({ message: "Ride is accepted", ride });
+//     }
+//     res.json({ message: "No accepted ride found" });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// };
+
+export const isRideAccepted = async (req, res) => {
+  // Long polling: wait for 'ride-accepted' event
+  rideEventEmitter.once("ride-accepted", (data) => {
+    res.send(data);
+  });
+
+  // Set timeout for long polling (e.g., 30 seconds)
+  setTimeout(() => {
+    res.status(204).send();
+  }, 30000);
+};
+
+subscribeToQueue("ride-accepted", async (msg) => {
+  const data = JSON.parse(msg);
+  rideEventEmitter.emit("ride-accepted", data);
+});
