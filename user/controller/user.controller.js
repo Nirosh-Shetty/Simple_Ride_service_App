@@ -1,4 +1,4 @@
-import rideModel from "../../ride/model/ride.model.js";
+import axios from "axios";
 import redis from "../service/redis.js";
 // import { EventEmitter } from "events";
 import { subscribeToQueue } from "../service/rabbit.js";
@@ -82,18 +82,23 @@ export const getUser = async (req, res) => {
 export const getRideHistory = async (req, res) => {
   try {
     const userId = req.user._id.toString();
-    // const cacheKey = `ride-history:${userId}`;
-    // Try to get from Redis cache
+    console.log(userId, "this is user ID");
+    const cacheKey = `ride-history:${userId}`;
+
     const cached = await redis.get(`ride-history:${userId}`);
-    if (cached) {
-      return res.json({ rides: JSON.parse(cached), cached: true });
-    }
+    if (cached) return res.json({ rides: JSON.parse(cached), cached: true });
 
-    const rides = await rideModel.find({ user: userId }).lean();
-
+    console.log(process.env.BASE_URL, "this is base url");
+    //TODO: pass header bellow
+    const response = await axios.get(`${process.env.BASE_URL}/ride/rides`, {
+      params: { userId },
+    });
+    const rides = response.data.rides || [];
+    // Cache the result
     await redis.set(`ride-history:${userId}`, JSON.stringify(rides), "EX", 300);
     return res.json({ rides, cached: false });
   } catch (error) {
+    console.log(error && error.message ? error.message : error);
     res.status(500).json({ message: error.message });
   }
 };

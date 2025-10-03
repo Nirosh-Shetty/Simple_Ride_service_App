@@ -31,3 +31,15 @@ export const acceptRide = async (req, res, next) => {
   publishToQueue("ride-accepted", JSON.stringify(ride));
   res.send(ride);
 };
+
+export const getRidesForUser = async (req, res) => {
+  try {
+    console.log("get rides for user called");
+    const userId = req.query.userId;
+    if (!userId) return res.status(400).json({ message: "userId required" });
+    const rides = await rideModel.find({ user: userId }).lean();
+    return res.json({ rides });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
